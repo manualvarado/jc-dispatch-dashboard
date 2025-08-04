@@ -1,4 +1,0 @@
-type,type_id,output_format_id
-number,number$comma_point,number$comma_point
-string,string$arbitrary_string,string$arbitrary_string
-string,string$arbitrary_string,string$arbitrary_string
