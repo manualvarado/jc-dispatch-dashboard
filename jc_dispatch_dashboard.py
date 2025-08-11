@@ -577,7 +577,7 @@ except Exception as e:
 st.subheader("1. Weekly Earnings Evolution per Dispatcher")
 
 # Get unique dispatchers
-dispatchers = sorted(df['FC NAME'].unique())
+dispatchers = sorted(df['FC NAME'].dropna().astype(str).unique())
 
 # Dispatcher selection
 selected_dispatcher = st.selectbox(
@@ -592,7 +592,7 @@ if selected_dispatcher != "All Dispatchers":
     dispatcher_data = df[df['FC NAME'] == selected_dispatcher]
     
     # Get drivers for this dispatcher
-    drivers = sorted(dispatcher_data['DRIVER NAME'].unique())
+    drivers = sorted(dispatcher_data['DRIVER NAME'].dropna().astype(str).unique())
     
     # Driver selection with multi-select
     selected_drivers = st.multiselect(
@@ -809,7 +809,7 @@ else:
 st.subheader("2. Weekly Billing per Driver by Dispatcher")
 
 # Get unique dispatchers
-dispatchers_billing = sorted(df['FC NAME'].unique())
+dispatchers_billing = sorted(df['FC NAME'].dropna().astype(str).unique())
 
 # Dispatcher selection
 selected_dispatcher_billing = st.selectbox(
@@ -825,7 +825,7 @@ if selected_dispatcher_billing != "All Dispatchers":
     dispatcher_billing_data = df[df['FC NAME'] == selected_dispatcher_billing]
     
     # Get drivers for this dispatcher
-    drivers_billing = sorted(dispatcher_billing_data['DRIVER NAME'].unique())
+    drivers_billing = sorted(dispatcher_billing_data['DRIVER NAME'].dropna().astype(str).unique())
     
     # Driver selection with multi-select
     selected_drivers_billing = st.multiselect(
@@ -933,7 +933,7 @@ if selected_dispatcher_dest != "All Dispatchers":
     dispatcher_dest_data = df[df['FC NAME'] == selected_dispatcher_dest]
     
     # Get drivers for this dispatcher
-    drivers_dest = sorted(dispatcher_dest_data['DRIVER NAME'].unique())
+    drivers_dest = sorted(dispatcher_dest_data['DRIVER NAME'].dropna().astype(str).unique())
     
     # Driver selection with multi-select
     selected_drivers_dest = st.multiselect(
@@ -1400,7 +1400,7 @@ else:
 st.subheader("5. Idle Days per Driver per Dispatcher")
 
 # Get unique dispatchers
-dispatchers_idle = sorted(df['FC NAME'].unique())
+dispatchers_idle = sorted(df['FC NAME'].dropna().astype(str).unique())
 
 # Dispatcher selection
 selected_dispatcher_idle = st.selectbox(
@@ -1416,7 +1416,7 @@ if selected_dispatcher_idle != "All Dispatchers":
     dispatcher_idle_data = df[df['FC NAME'] == selected_dispatcher_idle]
     
     # Get drivers for this dispatcher
-    drivers_idle = sorted(dispatcher_idle_data['DRIVER NAME'].unique())
+    drivers_idle = sorted(dispatcher_idle_data['DRIVER NAME'].dropna().astype(str).unique())
     
     # Driver selection with multi-select
     selected_drivers_idle = st.multiselect(
