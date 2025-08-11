@@ -278,6 +278,38 @@ def load_data(file_source):
 # Load the main data
 df = load_data(file_to_use)
 
+# --- Global Dispatcher Filter ---
+if not df.empty and 'FC NAME' in df.columns:
+    # Get unique dispatchers for global filter
+    all_dispatchers = sorted(df['FC NAME'].dropna().astype(str).unique())
+    
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🎯 Global Dispatcher Filter")
+    
+    # Global dispatcher multi-select
+    selected_global_dispatchers = st.sidebar.multiselect(
+        "Select Dispatchers to Include:",
+        options=all_dispatchers,
+        default=all_dispatchers,
+        help="Select which dispatchers to include in ALL dashboard views. Leave empty to show all dispatchers."
+    )
+    
+    # Apply global dispatcher filter
+    if selected_global_dispatchers:
+        df = df[df['FC NAME'].isin(selected_global_dispatchers)]
+        st.sidebar.success(f"✅ Filtered to {len(selected_global_dispatchers)} dispatcher(s): {", ".join(selected_global_dispatchers)}")
+    else:
+        st.sidebar.info("ℹ️ Showing data for all dispatchers")
+    
+    st.sidebar.markdown("---")
+
+# Display global filter status in main area
+if not df.empty:
+    if selected_global_dispatchers:
+        st.info(f"🎯 **Global Filter Active**: Showing data for {len(selected_global_dispatchers)} dispatcher(s): {", ".join(selected_global_dispatchers)} | 📊 **Total Records**: {len(df):,}")
+    else:
+        st.info(f"ℹ️ **Global Filter**: Showing data for all dispatchers | 📊 **Total Records**: {len(df):,}")
+
 # Load reference data if provided
 @st.cache_data
 def process_trucking_made_successful_data(df):
@@ -575,23 +607,24 @@ except Exception as e:
 
 # --- KPI 1: Weekly Earnings Evolution per Dispatcher ---
 st.subheader("1. Weekly Earnings Evolution per Dispatcher")
-
-# Get unique dispatchers
-dispatchers = sorted(df['FC NAME'].dropna().astype(str).unique())
-
-# Dispatcher selection
-selected_dispatcher = st.selectbox(
-    "Select Dispatcher:",
-    ["All Dispatchers"] + list(dispatchers),
-    index=0,
-    help="Choose a dispatcher to view their drivers' earnings evolution"
-)
-
-if selected_dispatcher != "All Dispatchers":
-    # Filter data for selected dispatcher
-    dispatcher_data = df[df['FC NAME'] == selected_dispatcher]
-    
     # Get drivers for this dispatcher
+# Use the globally filtered data (no need for individual dispatcher selection)
+if not df.empty:
+    # Get drivers from the globally filtered data
+    drivers = sorted(df['DRIVER NAME'].dropna().astype(str).unique())
+    
+    # Driver selection with multi-select
+    selected_drivers = st.multiselect(
+        "Select Drivers (remove to exclude):",
+        drivers,
+        default=drivers,
+        help="Select which drivers to include in the chart. Remove drivers to exclude them."
+    )
+    
+    if selected_drivers:
+        # Filter data for selected drivers
+        filtered_data = df[df['DRIVER NAME'].isin(selected_drivers)]
+
     drivers = sorted(dispatcher_data['DRIVER NAME'].dropna().astype(str).unique())
     
     # Driver selection with multi-select
@@ -808,24 +841,30 @@ else:
 # --- KPI 2: Weekly Billing per Driver by Dispatcher ---
 st.subheader("2. Weekly Billing per Driver by Dispatcher")
 
-# Get unique dispatchers
-dispatchers_billing = sorted(df['FC NAME'].dropna().astype(str).unique())
-
-# Dispatcher selection
-selected_dispatcher_billing = st.selectbox(
-    "Select Dispatcher for Billing:",
-    ["All Dispatchers"] + list(dispatchers_billing),
-    index=0,
-    key="billing_dispatcher",
-    help="Choose a dispatcher to view their drivers' billing evolution"
-)
-
-if selected_dispatcher_billing != "All Dispatchers":
-    # Filter data for selected dispatcher
-    dispatcher_billing_data = df[df['FC NAME'] == selected_dispatcher_billing]
-    
-    # Get drivers for this dispatcher
     drivers_billing = sorted(dispatcher_billing_data['DRIVER NAME'].dropna().astype(str).unique())
+# Use the globally filtered data (no need for individual dispatcher selection)
+if not df.empty:
+    # Get drivers from the globally filtered data
+    drivers_billing = sorted(df['DRIVER NAME'].dropna().astype(str).unique())
+    
+    # Driver selection with multi-select
+    selected_drivers_billing = st.multiselect(
+        "Select Drivers for Billing (remove to exclude):",
+        drivers_billing,
+        default=drivers_billing,
+        key="billing_drivers",
+        help="Select which drivers to include in the billing chart. Remove drivers to exclude them."
+    )
+    
+    if selected_drivers_billing:
+        # Filter data for selected drivers
+        filtered_billing_data = df[df['DRIVER NAME'].isin(selected_drivers_billing)]
+        billing = filtered_billing_data.groupby(['FC NAME', 'DRIVER NAME', 'WEEK'])['BROKER RATE (FC) [$]'].sum().reset_index()
+    else:
+        billing = pd.DataFrame()
+else:
+    billing = pd.DataFrame()
+
     
     # Driver selection with multi-select
     selected_drivers_billing = st.multiselect(
@@ -916,25 +955,29 @@ st.info("""
   - Risk assessment for empty miles
 """)
 
-# Add dispatcher and driver filtering for destination analysis
-st.write("**Filter Destination Analysis:**")
-
-# Dispatcher selection for destination analysis
-selected_dispatcher_dest = st.selectbox(
-    "Select Dispatcher for Destination Analysis:",
-    ["All Dispatchers"] + list(dispatchers),
-    index=0,
-    key="dest_dispatcher",
-    help="Choose a dispatcher to view their destination market analysis"
-)
-
-if selected_dispatcher_dest != "All Dispatchers":
-    # Filter data for selected dispatcher
-    dispatcher_dest_data = df[df['FC NAME'] == selected_dispatcher_dest]
     
-    # Get drivers for this dispatcher
-    drivers_dest = sorted(dispatcher_dest_data['DRIVER NAME'].dropna().astype(str).unique())
+# Use the globally filtered data (no need for individual dispatcher selection)
+if not df.empty:
+    # Get drivers from the globally filtered data
+    drivers_dest = sorted(df['DRIVER NAME'].dropna().astype(str).unique())
     
+    # Driver selection with multi-select
+    selected_drivers_dest = st.multiselect(
+        "Select Drivers for Destination Analysis (remove to exclude):",
+        drivers_dest,
+        default=drivers_dest,
+        key="dest_drivers",
+        help="Select which drivers to include in the destination analysis"
+    )
+    
+    if selected_drivers_dest:
+        # Filter data for selected drivers
+        filtered_dest_data = df[df['DRIVER NAME'].isin(selected_drivers_dest)]
+    else:
+        filtered_dest_data = df.copy()
+else:
+    filtered_dest_data = pd.DataFrame()
+
     # Driver selection with multi-select
     selected_drivers_dest = st.multiselect(
         "Select Drivers for Destination Analysis (remove to exclude):",
@@ -1399,23 +1442,30 @@ else:
 # --- KPI 5: Idle Days per Driver per Dispatcher ---
 st.subheader("5. Idle Days per Driver per Dispatcher")
 
-# Get unique dispatchers
-dispatchers_idle = sorted(df['FC NAME'].dropna().astype(str).unique())
-
-# Dispatcher selection
-selected_dispatcher_idle = st.selectbox(
-    "Select Dispatcher for Idle Days:",
-    ["All Dispatchers"] + list(dispatchers_idle),
-    index=0,
-    key="idle_dispatcher",
-    help="Choose a dispatcher to view their drivers' idle days evolution"
-)
-
-if selected_dispatcher_idle != "All Dispatchers":
-    # Filter data for selected dispatcher
-    dispatcher_idle_data = df[df['FC NAME'] == selected_dispatcher_idle]
-    
     # Get drivers for this dispatcher
+# Use the globally filtered data (no need for individual dispatcher selection)
+if not df.empty:
+    # Get drivers from the globally filtered data
+    drivers_idle = sorted(df['DRIVER NAME'].dropna().astype(str).unique())
+    
+    # Driver selection with multi-select
+    selected_drivers_idle = st.multiselect(
+        "Select Drivers for Idle Days (remove to exclude):",
+        drivers_idle,
+        default=drivers_idle,
+        key="idle_drivers",
+        help="Select which drivers to include in the idle days chart. Remove drivers to exclude them."
+    )
+    
+    if selected_drivers_idle:
+        # Filter data for selected drivers
+        filtered_idle_data = df[df['DRIVER NAME'].isin(selected_drivers_idle)]
+        df_sorted = filtered_idle_data.sort_values(['DRIVER ID', 'DELIVERY DATE']).copy()
+    else:
+        df_sorted = pd.DataFrame()
+else:
+    df_sorted = pd.DataFrame()
+
     drivers_idle = sorted(dispatcher_idle_data['DRIVER NAME'].dropna().astype(str).unique())
     
     # Driver selection with multi-select
